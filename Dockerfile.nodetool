@@ -1,0 +1,7 @@
+FROM node:lts
+
+RUN npm install -g prettier
+
+USER node:node
+WORKDIR /app
+RUN chown -R node:node /app
