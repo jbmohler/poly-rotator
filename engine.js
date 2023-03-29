@@ -44,6 +44,12 @@ function isPointInTriangle(p, a, b, c) {
   const u = (dot11 * dot02 - dot01 * dot12) * invDenom;
   const v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
+  const w = 1 - u - v;
+
+  console.log(u.toFixed(2), " -- A-B");
+  console.log(v.toFixed(2), " -- A-C");
+  console.log(w.toFixed(2), " -- B-C");
+
   return u >= 0 && v >= 0 && u + v < 1;
 }
 
@@ -172,4 +178,58 @@ function generatePolygon() {
   const p2 = new Polygon(center, 3, 10, Math.PI / 2.95);
 
   isInterior(p2, p1);
+}
+
+var triangle = null;
+
+function get_barycentric_coords(event) {
+  var elemLeft = canvas.offsetLeft;
+  var elemTop = canvas.offsetTop;
+  var xVal = event.pageX - elemLeft;
+  var yVal = event.pageY - elemTop;
+
+  var p = { x: xVal, y: yVal };
+
+  isPointInTriangle(p, triangle[0], triangle[1], triangle[2]);
+}
+
+function examine() {
+  canvas.addEventListener("click", get_barycentric_coords, false);
+
+  triangle = [];
+  triangle.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+  });
+  triangle.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+  });
+  triangle.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+  });
+
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "red";
+
+  // Begin a new path
+  ctx.beginPath();
+
+  // Move to the first vertex of the polygon
+  ctx.moveTo(triangle[0].x, triangle[0].y);
+
+  // Loop through the remaining vertices of the polygon and draw lines between them
+  for (let i = 1; i < 3; i++) {
+    ctx.lineTo(triangle[i].x, triangle[i].y);
+  }
+  for (let i = 0; i < 3; i++) {
+    ctx.fillText(["A", "B", "C"][i], triangle[i].x, triangle[i].y);
+  }
+
+  // Close the path to complete the polygon
+  ctx.closePath();
+
+  // Draw the stroke (outline) of the polygon
+  ctx.stroke();
 }
