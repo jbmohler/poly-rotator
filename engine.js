@@ -170,7 +170,7 @@ function strokePolygon(poly, color = null) {
 
 function generatePolygon() {
   // Get the side count dropdown and generate button
-  const sideCountSelect = document.getElementById("sideCount");
+  const sideCountSelect = document.getElementById("polyCircum");
   // Get the selected side count from the dropdown
   const sides = parseInt(sideCountSelect.value);
 
@@ -190,6 +190,12 @@ function generatePolygon() {
 }
 
 function testExpansion() {
+  const sideCountSelect = document.getElementById("polyCircum");
+  const sidesCircum = parseInt(sideCountSelect.value);
+
+  const xx = document.getElementById("polyInscribedSides");
+  const sidesIn = parseInt(xx.value);
+
   // Calculate the radius of the polygon based on the size of the canvas
   const radius = Math.min(canvas.width, canvas.height) * 0.4;
 
@@ -204,13 +210,13 @@ function testExpansion() {
 
   const p1 = new Polygon(
     center,
-    5,
+    sidesIn,
     40 + Math.random() * 50,
     Math.random() * 2 * Math.PI
   );
   const p2 = new Polygon(
     center,
-    3,
+    sidesCircum,
     40 + Math.random() * 50,
     Math.random() * 2 * Math.PI
   );
@@ -220,6 +226,53 @@ function testExpansion() {
 
   const p3 = expand(p2, p1);
   strokePolygon(p3, "black");
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function testRotation() {
+  const sideCountSelect = document.getElementById("polyCircum");
+  const sidesCircum = parseInt(sideCountSelect.value);
+
+  const xx = document.getElementById("polyInscribedSides");
+  const sidesIn = parseInt(xx.value);
+
+  // Calculate the radius of the polygon based on the size of the canvas
+  const radius = Math.min(canvas.width, canvas.height) * 0.4;
+
+  // Calculate the center of the canvas
+  const center = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+  };
+
+  const p1 = new Polygon(center, sidesIn, radius, Math.random() * 2 * Math.PI);
+  const ctx = canvas.getContext("2d");
+
+  async function spin() {
+    for (let i = 0; i < 1000; i++) {
+      const p2 = new Polygon(
+        center,
+        sidesCircum,
+        radius,
+        (i / 100) * 2 * Math.PI
+      );
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      strokePolygon(p1, "red");
+      //strokePolygon(p2, "red");
+
+      const p3 = expand(p2, p1);
+      strokePolygon(p3, "black");
+
+      await sleep(0.25 * 1000);
+    }
+  }
+
+  spin();
 }
 
 var triangle = null;
