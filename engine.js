@@ -24,7 +24,7 @@ class Vector {
   }
 }
 
-function isPointInTriangle(p, a, b, c) {
+function barycentric_uvw(p, a, b, c) {
   p = new Vector(p.x, p.y);
   a = new Vector(a.x, a.y);
   b = new Vector(b.x, b.y);
@@ -46,11 +46,17 @@ function isPointInTriangle(p, a, b, c) {
 
   const w = 1 - u - v;
 
-  console.log(u.toFixed(2), " -- A-B");
-  console.log(v.toFixed(2), " -- A-C");
-  console.log(w.toFixed(2), " -- B-C");
+  return { u, v, w };
+}
 
-  return u >= 0 && v >= 0 && u + v < 1;
+function isPointInTriangle(p, a, b, c) {
+  const bary = barycentric_uvw(p, a, b, c);
+
+  console.log(bary.u.toFixed(2), " -- A-B");
+  console.log(bary.v.toFixed(2), " -- A-C");
+  console.log(bary.w.toFixed(2), " -- B-C");
+
+  return bary.u >= 0 && bary.v >= 0 && bary.w >= 0;
 }
 
 class Polygon {
@@ -109,43 +115,50 @@ function isInterior(p1, p2) {
   }
 }
 
+function expand(poly, enclosed) {
+  let radDelta = [];
+  for (let e1 of enclosed.vertices()) {
+    for (const [v1, v2] of iterateCircularPairs(poly.vertices())) {
+      const bary = barycentric_uvw(e1, v1, v2, poly.center);
+
+      radDelta.push(bary.u);
+    }
+  }
+
+  const factor = Math.min(...radDelta);
+
+  return new Polygon(
+    poly.center,
+    poly.sides,
+    poly.radius - poly.radius * factor,
+    poly.rotation
+  );
+}
+
 // Define a function to generate a regular polygon with a given center and radius
-function generateRegularPolygon(
-  center,
-  sides,
-  radius,
-  startAngle = 0,
-  color = null
-) {
+function strokePolygon(poly, color = null) {
   const ctx = canvas.getContext("2d");
   // Calculate the angle between each vertex of the polygon
-  const angle = (Math.PI * 2) / sides;
-
-  const centerX = center.x;
-  const centerY = center.y;
+  const angle = (Math.PI * 2) / poly.sides;
 
   if (!color) {
     color = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${
       Math.random() * 255
     })`;
   }
-  console.log(color);
   ctx.strokeStyle = color;
 
   // Begin a new path
   ctx.beginPath();
 
+  const verts = poly.vertices();
+
   // Move to the first vertex of the polygon
-  ctx.moveTo(
-    centerX + radius * Math.cos(startAngle),
-    centerY + radius * Math.sin(startAngle)
-  );
+  ctx.moveTo(verts[0].x, verts[0].y);
 
   // Loop through the remaining vertices of the polygon and draw lines between them
-  for (let i = 1; i < sides; i++) {
-    const x = centerX + radius * Math.cos(startAngle + angle * i);
-    const y = centerY + radius * Math.sin(startAngle + angle * i);
-    ctx.lineTo(x, y);
+  for (let i = 1; i < poly.sides; i++) {
+    ctx.lineTo(verts[i].x, verts[i].y);
   }
 
   // Close the path to complete the polygon
@@ -158,7 +171,6 @@ function generateRegularPolygon(
 function generatePolygon() {
   // Get the side count dropdown and generate button
   const sideCountSelect = document.getElementById("sideCount");
-  const generateButton = document.getElementById("generatePolygon");
   // Get the selected side count from the dropdown
   const sides = parseInt(sideCountSelect.value);
 
@@ -171,13 +183,43 @@ function generatePolygon() {
     y: canvas.height / 2,
   };
 
-  // Call the generateRegularPolygon function to draw the polygon
-  generateRegularPolygon(center, sides, radius, Math.PI / 3, "blue");
+  const reg = new Polygon(center, sides, radius, Math.PI / 3);
 
-  const p1 = new Polygon(center, 4, 5, Math.PI / 3);
-  const p2 = new Polygon(center, 3, 10, Math.PI / 2.95);
+  // Call the strokePolygon function to draw the polygon
+  strokePolygon(reg, "blue");
+}
 
-  isInterior(p2, p1);
+function testExpansion() {
+  // Calculate the radius of the polygon based on the size of the canvas
+  const radius = Math.min(canvas.width, canvas.height) * 0.4;
+
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Calculate the center of the canvas
+  const center = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+  };
+
+  const p1 = new Polygon(
+    center,
+    5,
+    40 + Math.random() * 50,
+    Math.random() * 2 * Math.PI
+  );
+  const p2 = new Polygon(
+    center,
+    3,
+    40 + Math.random() * 50,
+    Math.random() * 2 * Math.PI
+  );
+
+  strokePolygon(p1, "red");
+  strokePolygon(p2, "red");
+
+  const p3 = expand(p2, p1);
+  strokePolygon(p3, "black");
 }
 
 var triangle = null;
