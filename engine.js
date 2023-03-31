@@ -239,8 +239,12 @@ function testRotation() {
   const xx = document.getElementById("polyInscribedSides");
   const sidesIn = parseInt(xx.value);
 
+  const bracketed = document.getElementById("bracketed").checked;
+  console.log(bracketed);
+
   // Calculate the radius of the polygon based on the size of the canvas
-  const radius = Math.min(canvas.width, canvas.height) * 0.4;
+  const factor = sidesCircum === 3 || sidesIn === 3 ? 0.25 : 0.4;
+  const radius = Math.min(canvas.width, canvas.height) * 0.3;
 
   // Calculate the center of the canvas
   const center = {
@@ -267,6 +271,11 @@ function testRotation() {
 
       const p3 = expand(p2, p1);
       strokePolygon(p3, "black");
+
+      if (bracketed) {
+        const p4 = expand(p1, p3);
+        strokePolygon(p4, "red");
+      }
 
       await sleep(0.25 * 1000);
     }

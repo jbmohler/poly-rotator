@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Nested Rotating Regular Polygons</title>
     <style>
       /* Add any desired CSS styling for the canvas element here */
@@ -13,6 +13,12 @@
   <body>
     <h1>Nested Rotating Regular Polygons</h1>
 
+    <p>
+      Source:
+      <a href="https://github.com/jbmohler/poly-rotator"
+        >https://github.com/jbmohler/poly-rotator</a
+      >
+    </p>
 
     <label for="polyCircum">Sides (circumscribed):</label>
     <select id="polyCircum">
@@ -40,11 +46,15 @@
       <option value="11">11</option>
       <option value="12">12</option>
     </select>
+    <input id="bracketed" type="checkbox" /><label for="bracketed"
+      >Bracketed</label
+    >
     <br />
-    <button onclick="generatePolygon()">Generate Polygon</button>
-    <button onclick="testExpansion()">Expand example</button>
     <button onclick="testRotation()">Rotating</button>
+    <button onclick="generatePolygon()">Single Polygon</button>
+    <button onclick="testExpansion()">Expand example</button>
     <button onclick="examine()">Triangle barycentric coordinates</button>
+    <br />
 
     <canvas id="canvas" width="500" height="500"></canvas>
 
