@@ -232,6 +232,8 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+var rotatingLive = null;
+
 function testRotation() {
   const sideCountSelect = document.getElementById("polyCircum");
   const sidesCircum = parseInt(sideCountSelect.value);
@@ -254,6 +256,9 @@ function testRotation() {
 
   const p1 = new Polygon(center, sidesIn, radius, Math.random() * 2 * Math.PI);
   const ctx = canvas.getContext("2d");
+
+  const myInstance = (Math.random() * 10000).toFixed(0);
+  rotatingLive = myInstance;
 
   async function spin() {
     for (let i = 0; i < 1000; i++) {
@@ -278,6 +283,12 @@ function testRotation() {
       }
 
       await sleep(0.25 * 1000);
+      if (rotatingLive !== myInstance) {
+        break;
+      }
+    }
+    if (rotatingLive === myInstance) {
+      rotatingLive = null;
     }
   }
 
