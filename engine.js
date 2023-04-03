@@ -7,12 +7,33 @@ class Vector {
     this.y = y;
   }
 
+  static fromPoint(p) {
+    return new Vector(p.x, p.y);
+  }
+
+  static center(p1, p2) {
+    return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+  }
+
+  static basedUnit(base, dir) {
+    const vec = Vector.fromPoint(dir).subtract(Vector.fromPoint(base));
+    return vec.scale(1 / vec.norm());
+  }
+
   add(other) {
     return new Vector(this.x + other.x, this.y + other.y);
   }
 
   subtract(other) {
     return new Vector(this.x - other.x, this.y - other.y);
+  }
+
+  manhattan() {
+    return Math.abs(this.x) + Math.abs(this.y);
+  }
+
+  norm() {
+    return Math.sqrt(this.x ** 2 + this.y ** 2);
   }
 
   scale(factor) {
@@ -25,10 +46,10 @@ class Vector {
 }
 
 function barycentric_uvw(p, a, b, c) {
-  p = new Vector(p.x, p.y);
-  a = new Vector(a.x, a.y);
-  b = new Vector(b.x, b.y);
-  c = new Vector(c.x, c.y);
+  p = Vector.fromPoint(p);
+  a = Vector.fromPoint(a);
+  b = Vector.fromPoint(b);
+  c = Vector.fromPoint(c);
 
   const v0 = c.subtract(a);
   const v1 = b.subtract(a);
@@ -115,7 +136,7 @@ function isInterior(p1, p2) {
   }
 }
 
-function expand(poly, enclosed) {
+function expandFixedCenter(poly, enclosed) {
   let radDelta = [];
   for (let e1 of enclosed.vertices()) {
     for (const [v1, v2] of iterateCircularPairs(poly.vertices())) {
@@ -133,6 +154,74 @@ function expand(poly, enclosed) {
     poly.radius - poly.radius * factor,
     poly.rotation
   );
+}
+
+function translateFramed(poly, enclosed) {
+  let allMins = [];
+  for (const [v1, v2] of iterateCircularPairs(poly.vertices())) {
+    let radDelta = [];
+    for (let e1 of enclosed.vertices()) {
+      const bary = barycentric_uvw(e1, v1, v2, poly.center);
+
+      radDelta.push(bary.u);
+    }
+    allMins.push({ v1: v1, v2: v2, push: Math.min(...radDelta) });
+  }
+
+  const n = poly.sides;
+
+  if (n % 2 === 1) {
+    for (let i = 0; i < n; i++) {
+      const j1 = (i + (n - 1) / 2) % n;
+      const j2 = (i + (n + 1) / 2) % n;
+
+      // compare i'th side space with 2 opposite sides
+      allMins[i].delta =
+        allMins[i].push - Math.min(allMins[j1].push, allMins[j2].push);
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const j = (i + n / 2) % n;
+
+      // compare i'th side space with opposite side
+      allMins[i].delta = allMins[i].push - allMins[j].push;
+    }
+  }
+
+  allMins.sort((a, b) => {
+    return b.delta - a.delta;
+  });
+
+  // pick off the first element and push the center
+  const plan = allMins[0];
+  const repell = Vector.basedUnit(Vector.center(plan.v1, plan.v2), poly.center);
+  const newCenter = {
+    x: poly.center.x + (repell.x * plan.delta) / 2,
+    y: poly.center.y + (repell.y * plan.delta) / 2,
+  };
+
+  //return poly;
+  return new Polygon(newCenter, poly.sides, poly.radius, poly.rotation);
+}
+
+var eps = 0.005;
+
+function expand(poly, enclosed) {
+  while (true) {
+    const candidate = expandFixedCenter(poly, enclosed);
+
+    const translated = translateFramed(candidate, enclosed);
+
+    const cvec = new Vector(candidate.center.x, candidate.center.y);
+    const tvec = new Vector(translated.center.x, translated.center.y);
+    if (cvec.subtract(tvec).manhattan() < 0.005) {
+      poly = candidate;
+      break;
+    }
+
+    poly = translated;
+  }
+  return poly;
 }
 
 // Define a function to generate a regular polygon with a given center and radius
@@ -242,7 +331,6 @@ function testRotation() {
   const sidesIn = parseInt(xx.value);
 
   const bracketed = document.getElementById("bracketed").checked;
-  console.log(bracketed);
 
   // Calculate the radius of the polygon based on the size of the canvas
   const factor = sidesCircum === 3 || sidesIn === 3 ? 0.25 : 0.4;
