@@ -1,5 +1,5 @@
-// Get the canvas and context
 const canvas = document.getElementById("canvas");
+const graph = document.getElementById("graph");
 
 class Vector {
   constructor(x, y) {
@@ -105,6 +105,21 @@ class Polygon {
     }
 
     return this._vertices;
+  }
+
+  area() {
+    const vert = this.vertices();
+
+    const side = Vector.fromPoint(vert[0])
+      .subtract(Vector.fromPoint(vert[1]))
+      .norm();
+    const center = Vector.center(vert[0], vert[1]);
+
+    const height = Vector.fromPoint(center)
+      .subtract(Vector.fromPoint(this.center))
+      .norm();
+
+    return (this.sides * side * height) / 2;
   }
 }
 
@@ -317,6 +332,54 @@ function testExpansion() {
   strokePolygon(p3, "black");
 }
 
+class Graph {
+  static coords(x, y) {
+    const xMargin = graph.width * 0.1;
+    const xBody = graph.width * 0.8;
+    const yMargin = graph.height * 0.1;
+    const yBody = graph.height * 0.8;
+
+    return {
+      x: xMargin + (xBody / 2 / Math.PI) * x,
+      y: graph.height - yMargin - (yBody / 5) * y,
+    };
+  }
+
+  static skeleton() {
+    const ctx = graph.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "black";
+    const s1 = Graph.coords(-0.5, 0);
+    ctx.moveTo(s1.x, s1.y);
+    const s2 = Graph.coords(Math.PI * 2 + 0.5, 0);
+    ctx.lineTo(s2.x, s2.y);
+    ctx.stroke();
+
+    ctx.fillText("\u03b8", s2.x, s2.y);
+
+    const s3 = Graph.coords(0, -0.1);
+    ctx.moveTo(s3.x, s3.y);
+    const s4 = Graph.coords(0, 5.1);
+    ctx.lineTo(s4.x, s4.y);
+    ctx.stroke();
+
+    ctx.fillText("F", s4.x, s4.y);
+  }
+
+  static point(theta, f) {
+    const ctx = graph.getContext("2d");
+
+    const loc = Graph.coords(theta, f);
+
+    ctx.fillStyle = "blue";
+    ctx.beginPath();
+    ctx.arc(loc.x, loc.y, 3, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -331,6 +394,8 @@ function testRotation() {
   const sidesIn = parseInt(xx.value);
 
   const bracketed = document.getElementById("bracketed").checked;
+
+  Graph.skeleton();
 
   // Calculate the radius of the polygon based on the size of the canvas
   const factor = sidesCircum === 3 || sidesIn === 3 ? 0.25 : 0.4;
@@ -364,6 +429,8 @@ function testRotation() {
 
       const p3 = expand(p2, p1);
       strokePolygon(p3, "black");
+
+      Graph.point((i / 100) * 2 * Math.PI, p3.area() / p1.area());
 
       if (bracketed) {
         const p4 = expand(p1, p3);
